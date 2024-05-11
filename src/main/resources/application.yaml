@@ -1,0 +1,30 @@
+server:
+  http2:
+    enabled: true
+  port: 8443
+
+spring:
+  application:
+    name: security
+  jpa:
+    database: POSTGRESQL
+    defer-datasource-initialization: true
+  datasource:
+    initialization-mode: always
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: postgres
+    driverClassName: org.postgresql.Driver
+
+logging:
+  level:
+    org.springframework.security: trace
+
+security:
+  jwt:
+    refresh-token:
+      ttl-days: 1
+      key: '{"kty":"oct","k":"956PBFst1FguLr5irJD-aQ"}'
+    access-token:
+      ttl-minutes: 1
+      key: '{"kty":"oct","k":"hi7S5RX5ZRZooHA0RKGctZ-KtR9FoESgCnH-3BNg5XI"}'
