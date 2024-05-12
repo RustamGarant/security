@@ -15,6 +15,8 @@ import lombok.Setter;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
@@ -30,7 +32,7 @@ import java.util.function.Function;
 
 public class RequestJwtTokensFilter extends OncePerRequestFilter {
 
-    private final RequestMatcher requestMatcher = new AntPathRequestMatcher("jwt/tokens", HttpMethod.POST.name());
+    private final RequestMatcher requestMatcher = new AntPathRequestMatcher("/jwt/tokens", HttpMethod.POST.name());
 
     private final SecurityContextRepository securityContextRepository = new RequestAttributeSecurityContextRepository();
 
@@ -49,6 +51,7 @@ public class RequestJwtTokensFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
+        SecurityContext sc = SecurityContextHolder.getContext();
         if(this.requestMatcher.matches(request)){
             if(this.securityContextRepository.containsContext(request)) {
                 var context = this.securityContextRepository.loadDeferredContext(request).get();
@@ -59,8 +62,8 @@ public class RequestJwtTokensFilter extends OncePerRequestFilter {
                     response.setStatus(HttpServletResponse.SC_OK);
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-                    Tokens tokens = new Tokens(accessTokenStringSerializer.apply(accessToken), accessToken.expiresAt().toString(),
-                            refreshTokenStringSerializer.apply(refreshToken), refreshToken.expiresAt().toString());
+                    Tokens tokens = new Tokens(accessTokenStringSerializer.apply(accessToken), accessToken.expiresAt.toString(),
+                            refreshTokenStringSerializer.apply(refreshToken), refreshToken.expiresAt.toString());
 
                     objectMapper.writeValue(response.getWriter(), tokens);
 

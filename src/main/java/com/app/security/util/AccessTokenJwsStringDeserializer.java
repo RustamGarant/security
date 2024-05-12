@@ -2,8 +2,6 @@ package com.app.security.util;
 
 import com.app.security.dto.AccessToken;
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.AllArgsConstructor;
@@ -16,7 +14,6 @@ import java.util.UUID;
 import java.util.function.Function;
 
 @RequiredArgsConstructor
-@AllArgsConstructor
 @Setter
 @Slf4j
 public class AccessTokenJwsStringDeserializer implements Function<String, AccessToken> {

@@ -28,9 +28,9 @@ public class DefaultAccessTokenFactory implements Function<RefreshToken, AccessT
         Instant now = Instant.now();
 
         return new AccessToken(
-                refreshToken.id(),
-                refreshToken.subject(),
-                refreshToken.authorities().stream()
+                refreshToken.id,
+                refreshToken.subject,
+                refreshToken.authorities.stream()
                         .filter(auth -> auth.startsWith("GRANT_"))
                         .map(auth -> auth.substring(6))
                         .collect(Collectors.toList()),

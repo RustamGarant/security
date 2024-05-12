@@ -31,14 +31,14 @@ public class AccessTokenJwsStringSerializer implements Function<AccessToken, Str
     @Override
     public String apply(AccessToken accessToken) {
         JWSHeader jwsHeader = new JWSHeader.Builder(jwsAlgorithm)
-                .keyID(accessToken.id().toString())
+                .keyID(accessToken.id.toString())
                 .build();
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .jwtID(accessToken.id().toString())
-                .subject(accessToken.subject())
-                .issueTime(Date.from(accessToken.createdAt()))
-                .expirationTime(Date.from(accessToken.expiresAt()))
-                .claim("authorities", accessToken.authorities())
+                .jwtID(accessToken.id.toString())
+                .subject(accessToken.subject)
+                .issueTime(Date.from(accessToken.createdAt))
+                .expirationTime(Date.from(accessToken.expiresAt))
+                .claim("authorities", accessToken.authorities)
                 .build();
         var signedJWT = new SignedJWT(jwsHeader, jwtClaimsSet);
 

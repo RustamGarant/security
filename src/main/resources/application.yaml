@@ -6,11 +6,7 @@ server:
 spring:
   application:
     name: security
-  jpa:
-    database: POSTGRESQL
-    defer-datasource-initialization: true
   datasource:
-    initialization-mode: always
     url: jdbc:postgresql://localhost:5432/postgres
     username: postgres
     password: postgres

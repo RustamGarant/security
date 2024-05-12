@@ -1,19 +1,31 @@
 package com.app.security.config;
 
+import com.app.security.util.AccessTokenJwsStringDeserializer;
 import com.app.security.util.AccessTokenJwsStringSerializer;
+import com.app.security.util.RefreshTokenJweStringDeserializer;
 import com.app.security.util.RefreshTokenJweStringSerializer;
+import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.KeyLengthException;
+import com.nimbusds.jose.crypto.DirectDecrypter;
 import com.nimbusds.jose.crypto.DirectEncrypter;
 import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jose.jwk.OctetSequenceKey;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.DelegatingSecurityContextRepository;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 
 import java.text.ParseException;
 
@@ -25,14 +37,21 @@ public class SecurityConfig {
     public JwtAuthenticationConfigurer jwtAuthenticationConfigurer(
             @Value("${security.jwt.refresh-token.key}") String refreshTokenKey,
             @Value("${security.jwt.access-token.key}") String accessTokenKey
-    ) throws ParseException, KeyLengthException {
-        return new JwtAuthenticationConfigurer()
-                .accessTokenSerializer(new AccessTokenJwsStringSerializer(
+    ) throws ParseException, JOSEException {
+        return JwtAuthenticationConfigurer.builder()
+                .accessTokenStringSerializer((new AccessTokenJwsStringSerializer(
                         new MACSigner(OctetSequenceKey.parse(accessTokenKey))
-                ))
-                .refreshTokenSerializer(new RefreshTokenJweStringSerializer(
+                )))
+                .refreshTokenStringSerializer(new RefreshTokenJweStringSerializer(
                         new DirectEncrypter(OctetSequenceKey.parse(refreshTokenKey))
-                ));
+                ))
+                .accessTokenStringDeserializer(new AccessTokenJwsStringDeserializer(
+                        new MACVerifier(OctetSequenceKey.parse(accessTokenKey))
+                ))
+                .refreshTokenStringDeserializer(new RefreshTokenJweStringDeserializer(
+                        new DirectDecrypter(OctetSequenceKey.parse(refreshTokenKey)))
+                )
+                .build();
     }
 
     @Bean
@@ -51,4 +70,17 @@ public class SecurityConfig {
                 .build();
     }
 
+    @Bean
+    public UserDetailsService userDetailsService(JdbcTemplate jdbcTemplate) {
+        return username -> jdbcTemplate.query("select * from t_user where c_username = ?",
+                (rs, i) -> User.builder()
+                        .username(rs.getString("c_username"))
+                        .password(rs.getString("c_password"))
+                        .authorities(
+                                jdbcTemplate.query("select c_authority from t_user_authority where id_user = ?",
+                                        (rs1, i1) ->
+                                                new SimpleGrantedAuthority(rs1.getString("c_authority")),
+                                        rs.getInt("id")))
+                        .build(), username).stream().findFirst().orElse(null);
+    }
 }

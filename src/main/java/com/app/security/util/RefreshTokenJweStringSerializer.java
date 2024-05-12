@@ -21,14 +21,14 @@ public class RefreshTokenJweStringSerializer implements Function<RefreshToken, S
     @Override
     public String apply(RefreshToken refreshToken) {
         JWEHeader jwsHeader = new JWEHeader.Builder(jweAlgorithm, encryptionMethod)
-                .keyID(refreshToken.id().toString())
+                .keyID(refreshToken.id.toString())
                 .build();
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .jwtID(refreshToken.id().toString())
-                .subject(refreshToken.subject())
-                .issueTime(Date.from(refreshToken.createdAt()))
-                .expirationTime(Date.from(refreshToken.expiresAt()))
-                .claim("authorities", refreshToken.authorities())
+                .jwtID(refreshToken.id.toString())
+                .subject(refreshToken.subject)
+                .issueTime(Date.from(refreshToken.createdAt))
+                .expirationTime(Date.from(refreshToken.expiresAt))
+                .claim("authorities", refreshToken.authorities)
                 .build();
         var encryptedJWT = new EncryptedJWT(jwsHeader, jwtClaimsSet);
 
