@@ -2,7 +2,9 @@ package com.app.security.config;
 
 import com.app.security.dto.AccessToken;
 import com.app.security.dto.RefreshToken;
+import com.app.security.filter.RefreshTokenFilter;
 import com.app.security.filter.RequestJwtTokensFilter;
+import com.app.security.service.TokenAuthenticationUserDetailService;
 import com.app.security.util.JwtAuthenticationConverter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.*;
@@ -13,6 +15,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.security.web.authentication.AuthenticationFilter;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationProvider;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
@@ -50,8 +53,14 @@ public class JwtAuthenticationConfigurer extends AbstractHttpConfigurer<JwtAuthe
                 CsrfFilter.skipRequest(request)));
         jwtAuthenticationFilter.setFailureHandler(((request, response, exception) ->
                 response.sendError(HttpServletResponse.SC_FORBIDDEN)));
+        PreAuthenticatedAuthenticationProvider preAuthenticatedAuthenticationProvider = new PreAuthenticatedAuthenticationProvider();
+        preAuthenticatedAuthenticationProvider.setPreAuthenticatedUserDetailsService(new TokenAuthenticationUserDetailService());
+        RefreshTokenFilter refreshTokenFilter = new RefreshTokenFilter();
+        refreshTokenFilter.setAccessTokenStringSerializer(accessTokenStringSerializer);
 
         builder.addFilterAfter(requestJwtTokensFilter, ExceptionTranslationFilter.class)
-                .addFilterBefore(requestJwtTokensFilter, CsrfFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, CsrfFilter.class)
+                .addFilterAfter(refreshTokenFilter, ExceptionTranslationFilter.class)
+                .authenticationProvider(preAuthenticatedAuthenticationProvider);
     }
 }
