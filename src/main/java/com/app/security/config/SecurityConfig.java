@@ -35,52 +35,55 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationConfigurer jwtAuthenticationConfigurer(
-            @Value("${security.jwt.refresh-token.key}") String refreshTokenKey,
-            @Value("${security.jwt.access-token.key}") String accessTokenKey
+        @Value("${security.jwt.refresh-token.key}") String refreshTokenKey,
+        @Value("${security.jwt.access-token.key}") String accessTokenKey,
+        JdbcTemplate jdbcTemplate
     ) throws ParseException, JOSEException {
         return JwtAuthenticationConfigurer.builder()
-                .accessTokenStringSerializer((new AccessTokenJwsStringSerializer(
-                        new MACSigner(OctetSequenceKey.parse(accessTokenKey))
-                )))
-                .refreshTokenStringSerializer(new RefreshTokenJweStringSerializer(
-                        new DirectEncrypter(OctetSequenceKey.parse(refreshTokenKey))
-                ))
-                .accessTokenStringDeserializer(new AccessTokenJwsStringDeserializer(
-                        new MACVerifier(OctetSequenceKey.parse(accessTokenKey))
-                ))
-                .refreshTokenStringDeserializer(new RefreshTokenJweStringDeserializer(
-                        new DirectDecrypter(OctetSequenceKey.parse(refreshTokenKey)))
-                )
-                .build();
+            .accessTokenStringSerializer((new AccessTokenJwsStringSerializer(
+                new MACSigner(OctetSequenceKey.parse(accessTokenKey))
+            )))
+            .refreshTokenStringSerializer(new RefreshTokenJweStringSerializer(
+                new DirectEncrypter(OctetSequenceKey.parse(refreshTokenKey))
+            ))
+            .accessTokenStringDeserializer(new AccessTokenJwsStringDeserializer(
+                new MACVerifier(OctetSequenceKey.parse(accessTokenKey))
+            ))
+            .refreshTokenStringDeserializer(new RefreshTokenJweStringDeserializer(
+                new DirectDecrypter(OctetSequenceKey.parse(refreshTokenKey)))
+            )
+            .jdbcTemplate(jdbcTemplate)
+            .build();
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   JwtAuthenticationConfigurer jwtAuthenticationConfigurer) throws Exception {
+        JwtAuthenticationConfigurer jwtAuthenticationConfigurer) throws Exception {
         http.apply(jwtAuthenticationConfigurer);
 
         return http
-                .httpBasic(Customizer.withDefaults())
-                .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(authorizeHttpRequests ->
-                                authorizeHttpRequests
-                                        .requestMatchers("/manager.html").hasRole("MANAGER")
-                                        .requestMatchers("/error").permitAll()
-                                        .anyRequest().authenticated())
-                .build();
+            .httpBasic(Customizer.withDefaults())
+            .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(
+                SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(authorizeHttpRequests ->
+                authorizeHttpRequests
+                    .requestMatchers("/manager.html").hasRole("MANAGER")
+                    .requestMatchers("/error").permitAll()
+                    .anyRequest().authenticated())
+            .build();
     }
 
     @Bean
     public UserDetailsService userDetailsService(JdbcTemplate jdbcTemplate) {
         return username -> jdbcTemplate.query("select * from t_user where c_username = ?",
-                (rs, i) -> User.builder()
-                        .username(rs.getString("c_username"))
-                        .password(rs.getString("c_password"))
-                        .authorities(
-                                jdbcTemplate.query("select c_authority from t_user_authority where id_user = ?",
-                                        (rs1, i1) ->
-                                                new SimpleGrantedAuthority(rs1.getString("c_authority")),
-                                        rs.getInt("id")))
-                        .build(), username).stream().findFirst().orElse(null);
+            (rs, i) -> User.builder()
+                .username(rs.getString("c_username"))
+                .password(rs.getString("c_password"))
+                .authorities(
+                    jdbcTemplate.query("select c_authority from t_user_authority where id_user = ?",
+                        (rs1, i1) ->
+                            new SimpleGrantedAuthority(rs1.getString("c_authority")),
+                        rs.getInt("id")))
+                .build(), username).stream().findFirst().orElse(null);
     }
 }

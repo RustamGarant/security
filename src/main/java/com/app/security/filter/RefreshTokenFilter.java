@@ -36,22 +36,24 @@ public class RefreshTokenFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
-        if(requestMatcher.matches(request)){
-            if(securityContextRepository.containsContext(request)){
+        FilterChain filterChain) throws ServletException, IOException {
+        if (requestMatcher.matches(request)) {
+            if (securityContextRepository.containsContext(request)) {
                 var context = securityContextRepository.loadDeferredContext(request).get();
-                if(context != null && context.getAuthentication() instanceof PreAuthenticatedAuthenticationToken &&
-                        context.getAuthentication().getPrincipal() instanceof TokenUser user &&
-                context.getAuthentication().getAuthorities().contains(new SimpleGrantedAuthority("JWT_REFRESH"))) {
+                if (context != null
+                    && context.getAuthentication() instanceof PreAuthenticatedAuthenticationToken &&
+                    context.getAuthentication().getPrincipal() instanceof TokenUser user &&
+                    context.getAuthentication().getAuthorities()
+                        .contains(new SimpleGrantedAuthority("JWT_REFRESH"))) {
                     var accessToken = accessTokenFactory.apply((RefreshToken) user.getToken());
 
                     response.setStatus(HttpServletResponse.SC_OK);
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                    objectMapper.writeValue(response.getWriter(), new Tokens(accessTokenStringSerializer.apply(accessToken),
+                    objectMapper.writeValue(response.getWriter(),
+                        new Tokens(accessTokenStringSerializer.apply(accessToken),
                             accessToken.expiresAt.toString(), null, null));
                 }
             }
-
             throw new AccessDeniedException("User must be authenticated with JWT");
         }
 

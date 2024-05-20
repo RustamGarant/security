@@ -1,26 +1,34 @@
 package com.app.security.service;
 
-import com.app.security.dto.Token;
-import com.app.security.dto.TokenUser;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.AuthenticationUserDetailsService;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
+import com.app.security.dto.*;
+import java.time.*;
+import lombok.*;
+import org.springframework.jdbc.core.*;
+import org.springframework.security.core.authority.*;
+import org.springframework.security.core.userdetails.*;
+import org.springframework.security.web.authentication.preauth.*;
 
-import java.time.Instant;
+@RequiredArgsConstructor
+public class TokenAuthenticationUserDetailService implements
+    AuthenticationUserDetailsService<PreAuthenticatedAuthenticationToken> {
 
-public class TokenAuthenticationUserDetailService implements AuthenticationUserDetailsService<PreAuthenticatedAuthenticationToken> {
+    private final JdbcTemplate jdbcTemplate;
+
     @Override
-    public UserDetails loadUserDetails(PreAuthenticatedAuthenticationToken authenticationToken) throws UsernameNotFoundException {
+    public UserDetails loadUserDetails(PreAuthenticatedAuthenticationToken authenticationToken)
+        throws UsernameNotFoundException {
 
-        if(authenticationToken.getPrincipal() instanceof Token token) {
+        if (authenticationToken.getPrincipal() instanceof Token token) {
             return new TokenUser(token.getSubject(), "nopassword", true, true,
-                    token.getExpiresAt().isAfter(Instant.now()), true,
-                    token.getAuthorities().stream()
-                            .map(SimpleGrantedAuthority::new)
-                            .toList(),
-                    token);
+                !jdbcTemplate.queryForObject("""
+                    select exists(select id from t_deactivated_token where id = ?)
+                    """, Boolean.class, token.getId()) &&
+                    token.getExpiresAt().isAfter(Instant.now()),
+                true,
+                token.getAuthorities().stream()
+                    .map(SimpleGrantedAuthority::new)
+                    .toList(),
+                token);
         }
 
         throw new UsernameNotFoundException("Principal must be RefreshToken.");
