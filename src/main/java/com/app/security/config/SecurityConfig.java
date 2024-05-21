@@ -1,76 +1,43 @@
 package com.app.security.config;
 
-import com.app.security.util.AccessTokenJwsStringDeserializer;
-import com.app.security.util.AccessTokenJwsStringSerializer;
-import com.app.security.util.RefreshTokenJweStringDeserializer;
-import com.app.security.util.RefreshTokenJweStringSerializer;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.KeyLengthException;
-import com.nimbusds.jose.crypto.DirectDecrypter;
-import com.nimbusds.jose.crypto.DirectEncrypter;
-import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jose.crypto.MACVerifier;
-import com.nimbusds.jose.jwk.OctetSequenceKey;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.context.DelegatingSecurityContextRepository;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
-
-import java.text.ParseException;
+import com.app.security.filter.*;
+import org.springframework.context.annotation.*;
+import org.springframework.jdbc.core.*;
+import org.springframework.security.config.*;
+import org.springframework.security.config.annotation.web.builders.*;
+import org.springframework.security.config.http.*;
+import org.springframework.security.core.authority.*;
+import org.springframework.security.core.userdetails.*;
+import org.springframework.security.web.*;
+import org.springframework.security.web.access.*;
 
 @Configuration
-@EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
-    public JwtAuthenticationConfigurer jwtAuthenticationConfigurer(
-        @Value("${security.jwt.refresh-token.key}") String refreshTokenKey,
-        @Value("${security.jwt.access-token.key}") String accessTokenKey,
-        JdbcTemplate jdbcTemplate
-    ) throws ParseException, JOSEException {
-        return JwtAuthenticationConfigurer.builder()
-            .accessTokenStringSerializer((new AccessTokenJwsStringSerializer(
-                new MACSigner(OctetSequenceKey.parse(accessTokenKey))
-            )))
-            .refreshTokenStringSerializer(new RefreshTokenJweStringSerializer(
-                new DirectEncrypter(OctetSequenceKey.parse(refreshTokenKey))
-            ))
-            .accessTokenStringDeserializer(new AccessTokenJwsStringDeserializer(
-                new MACVerifier(OctetSequenceKey.parse(accessTokenKey))
-            ))
-            .refreshTokenStringDeserializer(new RefreshTokenJweStringDeserializer(
-                new DirectDecrypter(OctetSequenceKey.parse(refreshTokenKey)))
-            )
-            .jdbcTemplate(jdbcTemplate)
-            .build();
+    public TokenCookieAuthenticationConfigurer tokenCookieAuthenticationConfigurer()
+        throws Exception {
+        return new TokenCookieAuthenticationConfigurer();
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http,
-        JwtAuthenticationConfigurer jwtAuthenticationConfigurer) throws Exception {
-        http.apply(jwtAuthenticationConfigurer);
+    public SecurityFilterChain securityFilterChain(
+        HttpSecurity http,
+        TokenCookieAuthenticationConfigurer tokenCookieAuthenticationConfigurer) throws Exception {
 
-        return http
-            .httpBasic(Customizer.withDefaults())
-            .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(
-                SessionCreationPolicy.STATELESS))
+        http.httpBasic(Customizer.withDefaults())
+            .addFilterAfter(new GetCsrfTokenFilter(), ExceptionTranslationFilter.class)
             .authorizeHttpRequests(authorizeHttpRequests ->
                 authorizeHttpRequests
-                    .requestMatchers("/manager.html").hasRole("MANAGER")
-                    .requestMatchers("/error").permitAll()
+                    .requestMatchers("/manager.html", "/manager").hasRole("MANAGER")
+                    .requestMatchers("/error", "index.html").permitAll()
                     .anyRequest().authenticated())
-            .build();
+            .sessionManagement(sessionManagement -> sessionManagement
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        http.apply(tokenCookieAuthenticationConfigurer);
+
+        return http.build();
     }
 
     @Bean
