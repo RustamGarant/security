@@ -1,7 +1,6 @@
 package com.app.security.service;
 
 import com.app.security.dto.*;
-import com.app.security.ne.dto.*;
 import java.time.*;
 import lombok.*;
 import org.springframework.jdbc.core.*;
@@ -10,7 +9,7 @@ import org.springframework.security.core.userdetails.*;
 import org.springframework.security.web.authentication.preauth.*;
 
 @RequiredArgsConstructor
-public class TokenAuthenticationUserDetailService implements
+public class TokenAuthenticationUserDetailsService implements
     AuthenticationUserDetailsService<PreAuthenticatedAuthenticationToken> {
 
     private final JdbcTemplate jdbcTemplate;

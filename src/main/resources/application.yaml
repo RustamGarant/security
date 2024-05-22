@@ -16,6 +16,9 @@ logging:
   level:
     org.springframework.security: trace
 
+jwt:
+  cookie-token-key: '{"kty":"oct","k":"956PBFst1FguLr5irJD-aQ"}'
+
 security:
   jwt:
     refresh-token:
