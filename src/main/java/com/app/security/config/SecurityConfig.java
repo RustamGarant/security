@@ -33,13 +33,14 @@ public class SecurityConfig {
         @Value("${jwt.cookie-token-key}") String cookieTokenKey,
         JdbcTemplate jdbcTemplate
     ) throws Exception {
-        return new TokenCookieAuthenticationConfigurer()
+        return TokenCookieAuthenticationConfigurer.builder()
             .tokenCookieStringDeserializer(new TokenCookieJweStringDeserializer(
                 new DirectDecrypter(
                     OctetSequenceKey.parse(cookieTokenKey)
                 )
             ))
-            .jdbcTemplate(jdbcTemplate);
+            .jdbcTemplate(jdbcTemplate)
+            .build();
     }
 
     @Bean
@@ -52,6 +53,7 @@ public class SecurityConfig {
         tokenCookieSessionAuthenticationStrategy.setTokenStringSerializer(tokenCookieJweStringSerializer);
 
         http.httpBasic(Customizer.withDefaults())
+            .formLogin(Customizer.withDefaults())
             .addFilterAfter(new GetCsrfTokenFilter(), ExceptionTranslationFilter.class)
             .authorizeHttpRequests(authorizeHttpRequests ->
                 authorizeHttpRequests

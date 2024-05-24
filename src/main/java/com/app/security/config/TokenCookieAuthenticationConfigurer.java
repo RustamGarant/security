@@ -17,7 +17,6 @@ import org.springframework.security.web.csrf.*;
 
 @Setter
 @Builder
-@NoArgsConstructor
 public class TokenCookieAuthenticationConfigurer
     extends AbstractHttpConfigurer<TokenCookieAuthenticationConfigurer, HttpSecurity> {
 
