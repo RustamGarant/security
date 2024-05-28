@@ -9,6 +9,7 @@ import lombok.*;
 import lombok.extern.slf4j.*;
 
 @Slf4j
+@AllArgsConstructor
 public class TokenCookieJweStringSerializer implements Function<Token, String> {
 
     private final JWEEncrypter jweEncrypter;
@@ -21,12 +22,6 @@ public class TokenCookieJweStringSerializer implements Function<Token, String> {
 
     public TokenCookieJweStringSerializer(JWEEncrypter jweEncrypter) {
         this.jweEncrypter = jweEncrypter;
-    }
-
-    public TokenCookieJweStringSerializer(JWEEncrypter jweEncrypter, JWEAlgorithm jweAlgorithm, EncryptionMethod encryptionMethod) {
-        this.jweEncrypter = jweEncrypter;
-        this.jweAlgorithm = jweAlgorithm;
-        this.encryptionMethod = encryptionMethod;
     }
 
     @Override

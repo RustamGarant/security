@@ -5,6 +5,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.Setter;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -15,6 +16,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+@Setter
 public class GetCsrfTokenFilter extends OncePerRequestFilter {
 
     private RequestMatcher requestMatcher = new AntPathRequestMatcher("/csrf", HttpMethod.GET.name());
@@ -22,18 +24,6 @@ public class GetCsrfTokenFilter extends OncePerRequestFilter {
     private CsrfTokenRepository csrfTokenRepository = new CookieCsrfTokenRepository();
 
     private ObjectMapper objectMapper = new ObjectMapper();
-
-    public void setRequestMatcher(RequestMatcher requestMatcher) {
-        this.requestMatcher = requestMatcher;
-    }
-
-    public void setCsrfTokenRepository(CsrfTokenRepository csrfTokenRepository) {
-        this.csrfTokenRepository = csrfTokenRepository;
-    }
-
-    public void setObjectMapper(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
